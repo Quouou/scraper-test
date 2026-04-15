@@ -1,27 +1,35 @@
+from flask import json
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.chrome.options import Options
+from dotenv import load_dotenv
 
+import boto3
 import time
+import os
+
+load_dotenv()
 
 chrome_options = Options()
 chrome_options.add_argument("--headless=new")
 chrome_options.add_argument("--window-size=1920,1080")
 driver = webdriver.Chrome(options=chrome_options)
 
+s3 = boto3.client('s3')
+
 try:
     master_quotes = []
     driver.get("http://quotes.toscrape.com/search.aspx")
 
 
-    author_names = ['Albert Einstein']
+    author_names = []
 
     select_author = Select(driver.find_element(By.ID, "author"))
     # print(f"Amount of authors: {len(select_author.options) - 1}")
-    # for option in select_author.options:
-    #     if option.text != "----------":
-    #         author_names.append(option.text)
+    for option in select_author.options:
+        if option.text != "----------":
+            author_names.append(option.text)
     # print('Finished collecting author names')
 
     for author in author_names:
@@ -41,6 +49,7 @@ try:
             tagsDropDown = Select(driver.find_element(By.ID, "tag"))
             tagsDropDown.select_by_visible_text(tag)
 
+    
             time.sleep(1)
 
             submit = driver.find_element(By.NAME, "submit_button")
@@ -61,13 +70,16 @@ try:
                 if not isDuplicate:
                     master_quotes.append({
                             "author": author,
-                            "tag": tag,
+                            "tag": [tag],
                             "quote": q.find_element(By.CLASS_NAME, "content").text
                         
                     })
-        print(f"Finished collecting quotes for author: {author}")
+        # print(f"Finished collecting quotes for author: {author}")
 
-    print (f"All Quotes: {master_quotes}")
-
+    s3.put_object(
+        Bucket='scraper-output-bucket-chris-test',
+        Key='quotes.json',
+        Body=json.dumps(master_quotes)
+    )
 finally:
     driver.quit()
