@@ -3,13 +3,10 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.chrome.options import Options
-from dotenv import load_dotenv
 
 import boto3
 import time
-import os
 
-load_dotenv()
 
 chrome_options = Options()
 chrome_options.add_argument("--headless=new")
